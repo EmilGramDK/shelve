@@ -1,0 +1,53 @@
+services:
+  shelve:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD}
+      NUXT_PRIVATE_ENCRYPTION_KEY: ${NUXT_PRIVATE_ENCRYPTION_KEY}
+
+      NUXT_PRIVATE_RESEND_API_KEY: ${NUXT_PRIVATE_RESEND_API_KEY}
+      NUXT_PRIVATE_SENDER_EMAIL: ${NUXT_PRIVATE_SENDER_EMAIL}
+
+      NUXT_PRIVATE_ADMIN_EMAILS: ${NUXT_PRIVATE_ADMIN_EMAILS}
+      NUXT_PRIVATE_ALLOWED_ORIGINS: ${NUXT_PRIVATE_ALLOWED_ORIGINS}
+
+      # Optional OAuth
+      NUXT_OAUTH_GITHUB_CLIENT_ID: ${NUXT_OAUTH_GITHUB_CLIENT_ID:-}
+      NUXT_OAUTH_GITHUB_CLIENT_SECRET: ${NUXT_OAUTH_GITHUB_CLIENT_SECRET:-}
+      NUXT_OAUTH_GOOGLE_CLIENT_ID: ${NUXT_OAUTH_GOOGLE_CLIENT_ID:-}
+      NUXT_OAUTH_GOOGLE_CLIENT_SECRET: ${NUXT_OAUTH_GOOGLE_CLIENT_SECRET:-}
+
+      # Optional GitHub App sync integration
+      NUXT_PRIVATE_GITHUB_PRIVATE_KEY: ${NUXT_PRIVATE_GITHUB_PRIVATE_KEY:-}
+    expose:
+      - 3000
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - shelve_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  shelve_postgres_data:
